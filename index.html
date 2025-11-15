@@ -66,6 +66,12 @@
             border: none !important; /* Remove qualquer borda */
         }
         
+        /* FALLBACK: Garante que o canvas 3D tenha dimensão, se ele for gerado */
+        .vw-plugin-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
         /* 4. A nossa interface (botões, legendas) ficará por cima */
         .ui-overlay {
             position: relative;
@@ -75,16 +81,17 @@
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- =========== PLUGIN VLIBRAS (O AVATAR) - CARREGAMENTO SIMPLIFICADO =========== -->
-    <!-- Revertido para a injeção simples de tag/script, que é menos propensa a erros de timing -->
+    <!-- =========== PLUGIN VLIBRAS (O AVATAR) - CARREGAMENTO SIMPLIFICADO OFICIAL =========== -->
+    <!-- Voltando para a abordagem mais simples, eliminando os arquivos SDK/Luz criados -->
     <div vw>
         <div vw-access-button></div>
         <div vw-plugin-wrapper>
             <div vw-plugin-top-wrapper></div>
         </div>
     </div>
+    <!-- Carrega o plugin oficial diretamente -->
     <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <!-- ================================================= -->
+    <!-- =================================================================================== -->
 
 
     <!-- =========== NOSSA INTERFACE DE USUÁRIO (UI) =========== -->
@@ -130,15 +137,19 @@
         // ===================================
         
         let isVwReady = false;
+        
         // O evento 'vw_plugin_loaded' é disparado pelo próprio widget do VLibras
         window.addEventListener('vw_plugin_loaded', () => { 
             isVwReady = true;
+            
             // Inicializa o Widget APÓS o script ser carregado e o evento disparado
+            // O plugin oficial usa esta chamada para iniciar o iframe
             new window.VLibras.Widget('https://vlibras.gov.br/app');
             
             // Configura o fundo do avatar para ser escuro (opcional)
             if (window.vw && window.vw.vw_setBackground) {
-                window.vw.vw_setBackground("#111827"); // Fundo escuro
+                // Tenta definir o background, embora isso dependa da versão do plugin carregada
+                window.vw.vw_setBackground("#111827"); 
             }
             console.log("VLibras widget is ready.");
         });
