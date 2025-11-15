@@ -34,66 +34,42 @@
             width: 100%;
             overflow: hidden; /* Previne scroll da página */
             font-family: 'Inter', sans-serif;
-            background-color: #111827; /* Fundo escuro (mesmo do app) */
+            background-color: #111827; /* Fundo escuro */
         }
 
-        /* * === HACK PARA O VLIBRAS ===
-         * Força o contêiner do widget a ocupar a tela inteira.
+        /* * === INTEGRAÇÃO VLIBRAS (MODO PADRÃO) ===
+         * O VLibras Padrão cria um botão flutuante e um ícone no canto.
+         * Nosso objetivo é escondê-los e usar o avatar.
         */
         
-        /* 1. Força o container do widget a ser full screen */
-        div[vw] {
-            position: fixed !important;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 0; /* Coloca ele atrás da nossa UI */
-            background-color: #111827 !important; 
-            min-height: 100vh !important; 
-            min-width: 100vw !important;
-        }
-        
-        /* 2. Esconde o botão de acesso azul padrão do VLibras */
-        div[vw-access-button] {
-            /* Ocultar o botão flutuante padrão */
+        /* 1. Esconde o ícone de rodapé e o botão de acesso azul padrão do VLibras */
+        .sc-chPdSV, .vk-bar-button {
             display: none !important;
         }
 
-        /* 3. Garante que o iframe (onde o avatar vive) também é full screen */
-        div[vw-plugin-wrapper] iframe {
-            width: 100% !important;
-            height: 100% !important;
-            border: none !important; /* Remove qualquer borda */
-        }
-        
-        /* FALLBACK: Garante que o canvas 3D tenha dimensão, se ele for gerado */
-        .vw-plugin-wrapper canvas {
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        /* 4. A nossa interface (botões, legendas) ficará por cima */
+        /* 2. Garante que nossa interface fique por cima de tudo */
         .ui-overlay {
-            position: relative;
-            z-index: 10;
+            position: fixed; /* Mudei para fixed para garantir que fique sempre no rodapé */
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 9999; /* Z-index alto para ficar sobre o avatar */
+            padding-bottom: 1rem; /* Margem do rodapé */
         }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- =========== PLUGIN VLIBRAS (O AVATAR) =========== -->
-    <!-- Contêiner necessário para o VLibras injetar o iframe/avatar -->
-    <div vw>
-        <div vw-access-button></div>
-        <div vw-plugin-wrapper>
-            <div vw-plugin-top-wrapper></div>
-        </div>
+    <!-- =========== PLUGIN VLIBRAS (WIDGET PADRÃO) =========== -->
+    <!-- Este elemento é necessário para o Widget Padrão do VLibras injetar o código -->
+    <div vw class="enabled">
+        <div vw-access-button class="active"></div>
+        <div vw-plugin-wrapper></div>
     </div>
     
-    <!-- NOVO: Carrega o SDK localmente em vez de usar o link oficial do plugin -->
+    <!-- NOVO: Carrega o SDK LOCAL. Ele agora usa a API de widget mais robusta. -->
     <script src="vlibras-sdk.js"></script> 
-    <!-- =================================================================================== -->
+    <!-- ======================================================================= -->
 
 
     <!-- =========== NOSSA INTERFACE DE USUÁRIO (UI) =========== -->
@@ -127,7 +103,7 @@
                 <p id="caption-line-3" class="text-lg sm:text-2xl font-medium h-8 sm:h-10 truncate"></p>
                 
                 <!-- Indicador de status -->
-                <p id="status-indicator" class="text-sm text-blue-300 text-center h-4"></p>
+                <p id="status-indicator" class="text-sm text-blue-300 text-center h-4">Aguardando a inicialização do VLibras...</p>
             </div>
         </div>
     </div>
@@ -140,16 +116,14 @@
         
         let isVwReady = false;
         
-        // 
-        // 1. A inicialização agora é feita pelo 'vlibras-sdk.js'
-        //
+        // 1. A inicialização agora é feita pelo 'vlibras-sdk.js' (novo modo)
         
         // Função global para enviar texto ao avatar
         function signLanguage(text) {
-            // Verifica se o widget está pronto E se a função de envio existe
-            if (isVwReady && window.vw && typeof window.vw.vw_setSource === 'function') {
+            // O widget padrão usa uma função global no window
+            if (isVwReady && window.vlibraswidget && typeof window.vlibraswidget.default.setSource === 'function') {
                 // Envia o texto para o avatar traduzir
-                window.vw.vw_setSource(text);
+                window.vlibraswidget.default.setSource(text);
                 console.log("Enviando texto para VLibras:", text);
             } else {
                 console.warn("VLibras não está pronto para receber texto. Texto:", text);
@@ -157,21 +131,39 @@
             }
         }
         
-        // 2. Escuta o evento que o SDK dispara quando termina a inicialização
-        window.addEventListener('vw_plugin_loaded', () => {
-             isVwReady = true;
-             console.log("VLibras widget está pronto e inicializado (via SDK local).");
-             // Tenta definir o fundo para corresponder ao nosso tema escuro
-             if (window.vw && window.vw.vw_setBackground) {
-                 window.vw.vw_setBackground("#111827"); 
-             }
-             document.getElementById('status-indicator').textContent = "Pronto. Tente falar.";
+        // 2. O VLibras Widget padrão injeta o script e se inicializa, 
+        //    então verificamos a presença do objeto global.
+        function checkVlibrasReady() {
+            if (window.vlibraswidget && window.vlibraswidget.default.iniciado) {
+                isVwReady = true;
+                console.log("VLibras widget padrão está pronto e inicializado.");
+                document.getElementById('status-indicator').textContent = "Pronto. Tente falar.";
+                
+                // Tenta forçar o avatar a aparecer (clicando no botão escondido)
+                var acessButton = document.querySelector('div[vw-access-button]');
+                if (acessButton) {
+                    acessButton.click();
+                    console.log("Clicando no botão de acesso VLibras escondido para iniciar o avatar.");
+                }
+
+            } else if (document.getElementById('status-indicator').textContent === "Aguardando a inicialização do VLibras...") {
+                // Tenta novamente em breve, mas só se ainda estiver no estado inicial
+                setTimeout(checkVlibrasReady, 500);
+            }
+        }
+        
+        // Inicia a verificação de prontidão do VLibras após o DOM carregar
+        document.addEventListener('DOMContentLoaded', () => {
+             setTimeout(checkVlibrasReady, 1000); // Dá um tempo para o script externo carregar
         });
 
 
         // ===================================
         // LÓGICA DE RECONHECIMENTO DE VOZ (API)
         // ===================================
+        
+        // O restante do código de reconhecimento de voz e interface (buttons, captions, etc.)
+        // é mantido como estava, pois está funcionando corretamente.
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
