@@ -111,30 +111,28 @@
 
 
     <!-- =========== NOSSA INTERFACE DE USUÁRIO (UI) =========== -->
-    <!-- Este container coloca nosso UI (botões e legendas) por cima do avatar -->
-    <div class="ui-overlay h-full w-full flex flex-col items-center justify-between p-4 sm:p-6">
+    <!-- Ajustado para usar 'justify-end' para empurrar o conteúdo para baixo -->
+    <div class="ui-overlay h-full w-full flex flex-col items-center justify-end p-4 sm:p-6">
         
-        <!-- Espaço reservado no topo (apenas para equilíbrio visual) -->
-        <div class="h-16">
-            <!-- Pode-se adicionar um logo ou título aqui se desejar -->
-        </div>
+        <!-- Novo container para agrupar botões e legendas no rodapé -->
+        <div class="w-full max-w-4xl mx-auto flex flex-col items-center gap-4">
 
-        <!-- Botões de Controle -->
-        <div class="flex flex-col sm:flex-row gap-4">
-            <button id="btn-start" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2">
-                <!-- Ícone de Microfone (SVG) -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
-                Modo Microfone
-            </button>
-            <button id="btn-stop" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2 hidden">
-                <!-- Ícone de Parar (SVG) -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
-                Parar
-            </button>
-        </div>
+            <!-- Botões de Controle -->
+            <!-- Os botões agora ficam acima das legendas -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="btn-start" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2">
+                    <!-- Ícone de Microfone (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    Modo Microfone
+                </button>
+                <button id="btn-stop" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2 hidden">
+                    <!-- Ícone de Parar (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                    Parar
+                </button>
+            </div>
 
-        <!-- Container para Closed Captions (3 linhas) -->
-        <div class="w-full max-w-4xl mx-auto mb-4">
+            <!-- Container para Closed Captions (3 linhas) -->
             <div id="captions-container" 
                  class="bg-black bg-opacity-70 backdrop-blur-sm p-4 rounded-lg"
                  style="min-height: 8rem;"> <!-- Altura mínima para 3 linhas de texto -->
