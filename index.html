@@ -41,8 +41,8 @@
          * Força o contêiner do widget a ocupar a tela inteira.
         */
         
-        /* 1. Força o container do widget (gerado pelo JS) a ser full screen */
-        #vlibras-widget-container {
+        /* 1. Força o container do widget a ser full screen */
+        div[vw] {
             position: fixed !important;
             top: 0;
             left: 0;
@@ -55,12 +55,12 @@
         }
         
         /* 2. Esconde o botão de acesso azul padrão do VLibras */
-        .vw-access-button {
+        div[vw-access-button] {
             display: none !important;
         }
 
         /* 3. Garante que o iframe (onde o avatar vive) também é full screen */
-        .vw-plugin-wrapper iframe {
+        div[vw-plugin-wrapper] iframe {
             width: 100% !important;
             height: 100% !important;
             border: none !important; /* Remove qualquer borda */
@@ -75,11 +75,15 @@
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- =========== PLUGIN VLIBRAS (O AVATAR) - CONTAINER =========== -->
-    <!-- O script de injeção abaixo vai inserir o widget aqui dentro -->
-    <div id="vlibras-widget-container" class="full-screen-container">
-        <!-- O conteúdo será injetado pelo JavaScript -->
+    <!-- =========== PLUGIN VLIBRAS (O AVATAR) - CARREGAMENTO SIMPLIFICADO =========== -->
+    <!-- Revertido para a injeção simples de tag/script, que é menos propensa a erros de timing -->
+    <div vw>
+        <div vw-access-button></div>
+        <div vw-plugin-wrapper>
+            <div vw-plugin-top-wrapper></div>
+        </div>
     </div>
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
     <!-- ================================================= -->
 
 
@@ -119,47 +123,19 @@
         </div>
     </div>
 
-    <!-- =========== SCRIPT DA APLICAÇÃO (LÓGICA) e INJEÇÃO VLIBRAS =========== -->
+    <!-- =========== SCRIPT DA APLICAÇÃO (LÓGICA) =========== -->
     <script>
         // ===================================
-        // FIX: INJEÇÃO DINÂMICA DO VLIBRAS (Agora dentro de onload)
-        // Garante que o script seja carregado e inicializado corretamente APÓS o DOM estar pronto
-        // ===================================
-        window.onload = function() {
-            const vlibrasContainer = document.getElementById('vlibras-widget-container');
-            
-            if (vlibrasContainer) {
-                // Cria os elementos que o widget espera
-                vlibrasContainer.innerHTML = `
-                    <div vw>
-                        <div class="vw-access-button"></div>
-                        <div class="vw-plugin-wrapper">
-                            <div class="vw-plugin-top-wrapper"></div>
-                        </div>
-                    </div>
-                `;
-                // Cria e anexa o script do VLibras
-                const script = document.createElement('script');
-                script.src = "https://vlibras.gov.br/app/vlibras-plugin.js";
-                script.onload = () => {
-                    // Inicializa o Widget APÓS o script ser carregado
-                    new window.VLibras.Widget('https://vlibras.gov.br/app');
-                    console.log("VLibras script loaded and initialized.");
-                };
-                script.onerror = () => {
-                    console.error("ERRO: Falha ao carregar o script do VLibras. Verifique a URL ou a conexão de rede.");
-                };
-                document.head.appendChild(script);
-            }
-        };
-
+        // INICIALIZAÇÃO E FUNÇÕES DO VLIBRAS
         // ===================================
         
         let isVwReady = false;
-        // Função que usaremos para "falar" com o avatar.
-        // O evento 'vw_plugin_loaded' é disparado pelo próprio widget.
+        // O evento 'vw_plugin_loaded' é disparado pelo próprio widget do VLibras
         window.addEventListener('vw_plugin_loaded', () => { 
             isVwReady = true;
+            // Inicializa o Widget APÓS o script ser carregado e o evento disparado
+            new window.VLibras.Widget('https://vlibras.gov.br/app');
+            
             // Configura o fundo do avatar para ser escuro (opcional)
             if (window.vw && window.vw.vw_setBackground) {
                 window.vw.vw_setBackground("#111827"); // Fundo escuro
