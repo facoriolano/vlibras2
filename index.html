@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    
+    <!-- Meta tag essencial para Web Apps Mobile (design responsivo) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Tradutor LIBRAS</title>
+    
+    <!-- Carrega o Tailwind CSS para o design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonte Inter (ótima para UI) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        // Configuração do Tailwind
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        /* CSS para forçar o App a ser em tela cheia */
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Previne scroll da página */
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Fundo escuro (mesmo do app) */
+        }
+
+        /* * === HACK PARA O VLIBRAS ===
+         * Esta é a parte principal para fazer o avatar
+         * se comportar como um "fundo de tela".
+        */
+        
+        /* 1. Força o container do widget a ocupar a tela inteira */
+        div[vw] {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 0; /* Coloca ele atrás da nossa UI */
+        }
+        
+        /* 2. Esconde o botão de acesso azul padrão do VLibras */
+        div[vw-access-button] {
+            display: none !important;
+        }
+        
+        /* 3. Garante que o canvas do avatar preencha o container */
+        canvas[vw-plugin-canvas] {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* 4. A nossa interface (botões, legendas) ficará por cima */
+        .ui-overlay {
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- =========== PLUGIN VLIBRAS (O AVATAR) =========== -->
+    <!-- Este é o Avatar. Ele será carregado e posicionado pelo CSS acima -->
+    <div vw>
+        <div vw-access-button></div>
+        <div vw-plugin-wrapper>
+            <div vw-plugin-top-wrapper></div>
+        </div>
+    </div>
+    <!-- Script para carregar e iniciar o VLibras -->
+    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    <script>
+        // Inicializa o Widget do VLibras
+        new window.VLibras.Widget('https://vlibras.gov.br/app');
+        
+        // Função que usaremos para "falar" com o avatar
+        // Ela precisa esperar o avatar estar pronto
+        let isVwReady = false;
+        window.addEventListener('vw_plugin_loaded', () => { 
+            isVwReady = true;
+            // Configura o fundo do avatar para ser escuro (opcional)
+            if (window.vw && window.vw.vw_setBackground) {
+                window.vw.vw_setBackground("#111827"); // Fundo escuro
+            }
+        });
+
+        // Função global para enviar texto ao avatar
+        function signLanguage(text) {
+            if (isVwReady && window.vw && window.vw.vw_setSource) {
+                // Envia o texto para o avatar traduzir
+                window.vw.vw_setSource(text);
+            } else {
+                console.warn("VLibras não está pronto ou não foi encontrado.");
+            }
+        }
+    </script>
+    <!-- ================================================= -->
+
+
+    <!-- =========== NOSSA INTERFACE DE USUÁRIO (UI) =========== -->
+    <!-- Este container coloca nosso UI (botões e legendas) por cima do avatar -->
+    <div class="ui-overlay h-full w-full flex flex-col items-center justify-between p-4 sm:p-6">
+        
+        <!-- Espaço reservado no topo (apenas para equilíbrio visual) -->
+        <div class="h-16">
+            <!-- Pode-se adicionar um logo ou título aqui se desejar -->
+        </div>
+
+        <!-- Botões de Controle -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button id="btn-start" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2">
+                <!-- Ícone de Microfone (SVG) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                Modo Microfone
+            </button>
+            <button id="btn-stop" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2 hidden">
+                <!-- Ícone de Parar (SVG) -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                Parar
+            </button>
+        </div>
+
+        <!-- Container para Closed Captions (3 linhas) -->
+        <div class="w-full max-w-4xl mx-auto mb-4">
+            <div id="captions-container" 
+                 class="bg-black bg-opacity-70 backdrop-blur-sm p-4 rounded-lg"
+                 style="min-height: 8rem;"> <!-- Altura mínima para 3 linhas de texto -->
+                
+                <!-- As 3 linhas de legenda -->
+                <p id="caption-line-1" class="text-lg sm:text-2xl font-medium opacity-50 h-8 sm:h-10 truncate"></p>
+                <p id="caption-line-2" class="text-lg sm:text-2xl font-medium opacity-75 h-8 sm:h-10 truncate"></p>
+                <p id="caption-line-3" class="text-lg sm:text-2xl font-medium h-8 sm:h-10 truncate"></p>
+                
+                <!-- Indicador de status -->
+                <p id="status-indicator" class="text-sm text-blue-300 text-center h-4"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== SCRIPT DA APLICAÇÃO (LÓGICA) =========== -->
+    <script>
+        // Verifica se o navegador suporta a API de Fala
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            // Inicializa a API
+            recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';      // Define o idioma
+            recognition.continuous = true;   // Continua escutando
+            recognition.interimResults = true; // Mostra resultados parciais (live caption)
+        } else {
+            // Se a API não for suportada, coloca uma mensagem de erro no indicador de status
+            console.error("Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome ou Edge.");
+            document.addEventListener('DOMContentLoaded', () => {
+                const statusElement = document.getElementById('status-indicator');
+                if (statusElement) {
+                    statusElement.textContent = "ERRO: Navegador incompatível (Reconhecimento de Voz).";
+                }
+                btnStart.disabled = true;
+            });
+        }
+
+        // Seleciona os elementos do UI
+        const btnStart = document.getElementById('btn-start');
+        const btnStop = document.getElementById('btn-stop');
+        const statusIndicator = document.getElementById('status-indicator');
+        
+        // Linhas de legenda
+        const line1 = document.getElementById('caption-line-1');
+        const line2 = document.getElementById('caption-line-2');
+        const line3 = document.getElementById('caption-line-3');
+
+        // Evento: Clicar em "Modo Microfone"
+        btnStart.addEventListener('click', () => {
+            if (!recognition) return; // Se a API não for suportada, não faz nada
+
+            try {
+                recognition.start();
+                btnStart.classList.add('hidden');
+                btnStop.classList.remove('hidden');
+                statusIndicator.textContent = "Estou ouvindo...";
+                line3.textContent = "";
+                line2.textContent = "";
+                line1.textContent = "";
+            } catch(e) {
+                console.error("Erro ao iniciar o reconhecimento:", e);
+                statusIndicator.textContent = "Erro ao iniciar o microfone.";
+                if (e.name === 'NotAllowedError') {
+                    // Substituímos o alert por uma mensagem de erro na interface
+                    statusIndicator.textContent = "ERRO CRÍTICO: Permissão de microfone negada. Recarregue a página e permita o acesso.";
+                }
+            }
+        });
+
+        // Evento: Clicar em "Parar"
+        btnStop.addEventListener('click', () => {
+            if (!recognition) return;
+            recognition.stop();
+        });
+        
+        // Evento: O microfone parou de ouvir (clicado em parar ou timeout)
+        recognition.onend = () => {
+            btnStart.classList.remove('hidden');
+            btnStop.classList.add('hidden');
+            statusIndicator.textContent = "";
+        };
+
+        // Evento: A API de fala retorna um resultado (A LÓGICA DE LEGENDAS E LIBRAS)
+        recognition.onresult = (event) => {
+            let interimTranscript = ''; // Texto temporário (enquanto fala)
+            let finalTranscript = '';   // Texto final (quando faz pausa)
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
+                
+                if (event.results[i].isFinal) {
+                    // Resultado final (o usuário fez uma pausa)
+                    finalTranscript = transcript.trim();
+                } else {
+                    // Resultado parcial (enquanto está falando)
+                    interimTranscript += transcript;
+                }
+            }
+
+            // Atualiza a legenda "live" (linha 3)
+            line3.textContent = interimTranscript;
+
+            // Se tivermos um resultado final, "sobe" as legendas e envia pro Avatar
+            if (finalTranscript) {
+                // Atualiza as 3 linhas de legenda
+                line1.textContent = line2.textContent;
+                line2.textContent = finalTranscript; // Move o texto finalizado para a linha 2
+                line3.textContent = ''; // Limpa a linha 3 para o próximo interim
+                
+                // ENVIA PARA O AVATAR DE LIBRAS
+                signLanguage(finalTranscript);
+                
+                statusIndicator.textContent = "Traduzindo...";
+            }
+        };
+
+        // Trata erros
+        recognition.onerror = (event) => {
+            console.error("Erro no reconhecimento de voz:", event.error);
+            statusIndicator.textContent = `Erro: ${event.error}`;
+            
+            if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                statusIndicator.textContent = "ERRO CRÍTICO: Permissão de microfone negada. Recarregue a página e permita o acesso.";
+                // Para o app se a permissão for negada
+                btnStop.click();
+            } else if (event.error === 'no-speech') {
+                statusIndicator.textContent = "Nenhuma fala detectada. Tentando novamente...";
+            } else if (event.error === 'audio-capture') {
+                statusIndicator.textContent = "Erro ao capturar áudio. Verifique seu microfone.";
+            }
+        };
+    </script>
+</body>
+</html>
