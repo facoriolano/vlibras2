@@ -38,33 +38,29 @@
         }
 
         /* * === HACK PARA O VLIBRAS ===
-         * Esta é a parte principal para fazer o avatar
-         * se comportar como um "fundo de tela".
+         * Força o contêiner do widget a ocupar a tela inteira.
         */
         
-        /* 1. Força o container do widget a ocupar a tela inteira */
-        div[vw] {
+        /* 1. Força o container do widget (gerado pelo JS) a ser full screen */
+        #vlibras-widget-container {
             position: fixed !important;
             top: 0;
             left: 0;
             width: 100% !important;
             height: 100% !important;
             z-index: 0; /* Coloca ele atrás da nossa UI */
-            /* Garante que o fundo do container também é escuro */
             background-color: #111827 !important; 
-            
-            /* FALLBACK: Garante que o container sempre tenha uma área visível */
             min-height: 100vh !important; 
             min-width: 100vw !important;
         }
         
         /* 2. Esconde o botão de acesso azul padrão do VLibras */
-        div[vw-access-button] {
+        .vw-access-button {
             display: none !important;
         }
 
-        /* 3. REFORÇO: Garante que o iframe (onde o avatar vive) também é full screen */
-        div[vw-plugin-wrapper] iframe {
+        /* 3. Garante que o iframe (onde o avatar vive) também é full screen */
+        .vw-plugin-wrapper iframe {
             width: 100% !important;
             height: 100% !important;
             border: none !important; /* Remove qualquer borda */
@@ -79,53 +75,21 @@
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- =========== PLUGIN VLIBRAS (O AVATAR) =========== -->
-    <!-- Este é o Avatar. Ele será carregado e posicionado pelo CSS acima -->
-    <div vw>
-        <div vw-access-button></div>
-        <div vw-plugin-wrapper>
-            <div vw-plugin-top-wrapper></div>
-        </div>
+    <!-- =========== PLUGIN VLIBRAS (O AVATAR) - CONTAINER =========== -->
+    <!-- O script de injeção abaixo vai inserir o widget aqui dentro -->
+    <div id="vlibras-widget-container" class="full-screen-container">
+        <!-- O conteúdo será injetado pelo JavaScript -->
     </div>
-    <!-- Script para carregar e iniciar o VLibras -->
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
-    <script>
-        // Inicializa o Widget do VLibras
-        new window.VLibras.Widget('https://vlibras.gov.br/app');
-        
-        // Função que usaremos para "falar" com o avatar
-        // Ela precisa esperar o avatar estar pronto
-        let isVwReady = false;
-        window.addEventListener('vw_plugin_loaded', () => { 
-            isVwReady = true;
-            // Configura o fundo do avatar para ser escuro (opcional)
-            if (window.vw && window.vw.vw_setBackground) {
-                window.vw.vw_setBackground("#111827"); // Fundo escuro
-            }
-        });
-
-        // Função global para enviar texto ao avatar
-        function signLanguage(text) {
-            if (isVwReady && window.vw && window.vw.vw_setSource) {
-                // Envia o texto para o avatar traduzir
-                window.vw.vw_setSource(text);
-            } else {
-                console.warn("VLibras não está pronto ou não foi encontrado.");
-            }
-        }
-    </script>
     <!-- ================================================= -->
 
 
     <!-- =========== NOSSA INTERFACE DE USUÁRIO (UI) =========== -->
-    <!-- Ajustado para usar 'justify-end' para empurrar o conteúdo para baixo -->
     <div class="ui-overlay h-full w-full flex flex-col items-center justify-end p-4 sm:p-6">
         
         <!-- Novo container para agrupar botões e legendas no rodapé -->
         <div class="w-full max-w-4xl mx-auto flex flex-col items-center gap-4">
 
             <!-- Botões de Controle -->
-            <!-- Os botões agora ficam acima das legendas -->
             <div class="flex flex-col sm:flex-row gap-4">
                 <button id="btn-start" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-all text-xl flex items-center gap-2">
                     <!-- Ícone de Microfone (SVG) -->
@@ -155,21 +119,79 @@
         </div>
     </div>
 
-    <!-- =========== SCRIPT DA APLICAÇÃO (LÓGICA) =========== -->
+    <!-- =========== SCRIPT DA APLICAÇÃO (LÓGICA) e INJEÇÃO VLIBRAS =========== -->
     <script>
-        // Verifica se o navegador suporta a API de Fala
+        // ===================================
+        // FIX: INJEÇÃO DINÂMICA DO VLIBRAS (Agora dentro de onload)
+        // Garante que o script seja carregado e inicializado corretamente APÓS o DOM estar pronto
+        // ===================================
+        window.onload = function() {
+            const vlibrasContainer = document.getElementById('vlibras-widget-container');
+            
+            if (vlibrasContainer) {
+                // Cria os elementos que o widget espera
+                vlibrasContainer.innerHTML = `
+                    <div vw>
+                        <div class="vw-access-button"></div>
+                        <div class="vw-plugin-wrapper">
+                            <div class="vw-plugin-top-wrapper"></div>
+                        </div>
+                    </div>
+                `;
+                // Cria e anexa o script do VLibras
+                const script = document.createElement('script');
+                script.src = "https://vlibras.gov.br/app/vlibras-plugin.js";
+                script.onload = () => {
+                    // Inicializa o Widget APÓS o script ser carregado
+                    new window.VLibras.Widget('https://vlibras.gov.br/app');
+                    console.log("VLibras script loaded and initialized.");
+                };
+                script.onerror = () => {
+                    console.error("ERRO: Falha ao carregar o script do VLibras. Verifique a URL ou a conexão de rede.");
+                };
+                document.head.appendChild(script);
+            }
+        };
+
+        // ===================================
+        
+        let isVwReady = false;
+        // Função que usaremos para "falar" com o avatar.
+        // O evento 'vw_plugin_loaded' é disparado pelo próprio widget.
+        window.addEventListener('vw_plugin_loaded', () => { 
+            isVwReady = true;
+            // Configura o fundo do avatar para ser escuro (opcional)
+            if (window.vw && window.vw.vw_setBackground) {
+                window.vw.vw_setBackground("#111827"); // Fundo escuro
+            }
+            console.log("VLibras widget is ready.");
+        });
+
+        // Função global para enviar texto ao avatar
+        function signLanguage(text) {
+            if (isVwReady && window.vw && window.vw.vw_setSource) {
+                // Envia o texto para o avatar traduzir
+                window.vw.vw_setSource(text);
+                console.log("Sending text to VLibras:", text);
+            } else {
+                console.warn("VLibras não está pronto para receber texto.");
+            }
+        }
+
+        // ===================================
+        // LÓGICA DE RECONHECIMENTO DE VOZ (API)
+        // ===================================
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
 
         if (SpeechRecognition) {
-            // Inicializa a API
             recognition = new SpeechRecognition();
-            recognition.lang = 'pt-BR';      // Define o idioma
-            recognition.continuous = true;   // Continua escutando
-            recognition.interimResults = true; // Mostra resultados parciais (live caption)
+            recognition.lang = 'pt-BR';      
+            recognition.continuous = true;   
+            recognition.interimResults = true; 
         } else {
-            // Se a API não for suportada, coloca uma mensagem de erro no indicador de status
-            console.error("Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome ou Edge.");
+            console.error("Seu navegador não suporta reconhecimento de voz.");
             document.addEventListener('DOMContentLoaded', () => {
                 const statusElement = document.getElementById('status-indicator');
                 if (statusElement) {
@@ -191,7 +213,7 @@
 
         // Evento: Clicar em "Modo Microfone"
         btnStart.addEventListener('click', () => {
-            if (!recognition) return; // Se a API não for suportada, não faz nada
+            if (!recognition) return; 
 
             try {
                 recognition.start();
@@ -205,7 +227,6 @@
                 console.error("Erro ao iniciar o reconhecimento:", e);
                 statusIndicator.textContent = "Erro ao iniciar o microfone.";
                 if (e.name === 'NotAllowedError') {
-                    // Substituímos o alert por uma mensagem de erro na interface
                     statusIndicator.textContent = "ERRO CRÍTICO: Permissão de microfone negada. Recarregue a página e permita o acesso.";
                 }
             }
@@ -217,39 +238,34 @@
             recognition.stop();
         });
         
-        // Evento: O microfone parou de ouvir (clicado em parar ou timeout)
+        // Evento: O microfone parou de ouvir 
         recognition.onend = () => {
             btnStart.classList.remove('hidden');
             btnStop.classList.add('hidden');
             statusIndicator.textContent = "";
         };
 
-        // Evento: A API de fala retorna um resultado (A LÓGICA DE LEGENDAS E LIBRAS)
+        // Evento: A API de fala retorna um resultado
         recognition.onresult = (event) => {
-            let interimTranscript = ''; // Texto temporário (enquanto fala)
-            let finalTranscript = '';   // Texto final (quando faz pausa)
+            let interimTranscript = ''; 
+            let finalTranscript = '';   
 
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 const transcript = event.results[i][0].transcript;
                 
                 if (event.results[i].isFinal) {
-                    // Resultado final (o usuário fez uma pausa)
                     finalTranscript = transcript.trim();
                 } else {
-                    // Resultado parcial (enquanto está falando)
                     interimTranscript += transcript;
                 }
             }
 
-            // Atualiza a legenda "live" (linha 3)
             line3.textContent = interimTranscript;
 
-            // Se tivermos um resultado final, "sobe" as legendas e envia pro Avatar
             if (finalTranscript) {
-                // Atualiza as 3 linhas de legenda
                 line1.textContent = line2.textContent;
-                line2.textContent = finalTranscript; // Move o texto finalizado para a linha 2
-                line3.textContent = ''; // Limpa a linha 3 para o próximo interim
+                line2.textContent = finalTranscript; 
+                line3.textContent = ''; 
                 
                 // ENVIA PARA O AVATAR DE LIBRAS
                 signLanguage(finalTranscript);
@@ -265,7 +281,6 @@
             
             if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                 statusIndicator.textContent = "ERRO CRÍTICO: Permissão de microfone negada. Recarregue a página e permita o acesso.";
-                // Para o app se a permissão for negada
                 btnStop.click();
             } else if (event.error === 'no-speech') {
                 statusIndicator.textContent = "Nenhuma fala detectada. Tentando novamente...";
