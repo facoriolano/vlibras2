@@ -56,6 +56,7 @@
         
         /* 2. Esconde o botão de acesso azul padrão do VLibras */
         div[vw-access-button] {
+            /* Ocultar o botão flutuante padrão */
             display: none !important;
         }
 
@@ -81,8 +82,8 @@
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- =========== PLUGIN VLIBRAS (O AVATAR) - CARREGAMENTO SIMPLIFICADO OFICIAL =========== -->
-    <!-- Voltando para a abordagem mais simples, eliminando os arquivos SDK/Luz criados -->
+    <!-- =========== PLUGIN VLIBRAS (O AVATAR) =========== -->
+    <!-- Contêiner necessário para o VLibras injetar o iframe/avatar -->
     <div vw>
         <div vw-access-button></div>
         <div vw-plugin-wrapper>
@@ -138,30 +139,47 @@
         
         let isVwReady = false;
         
-        // O evento 'vw_plugin_loaded' é disparado pelo próprio widget do VLibras
-        window.addEventListener('vw_plugin_loaded', () => { 
-            isVwReady = true;
-            
-            // Inicializa o Widget APÓS o script ser carregado e o evento disparado
-            // O plugin oficial usa esta chamada para iniciar o iframe
-            new window.VLibras.Widget('https://vlibras.gov.br/app');
-            
-            // Configura o fundo do avatar para ser escuro (opcional)
-            if (window.vw && window.vw.vw_setBackground) {
-                // Tenta definir o background, embora isso dependa da versão do plugin carregada
-                window.vw.vw_setBackground("#111827"); 
+        // Função de inicialização do Widget, chamada após o plugin carregar
+        function initializeVlibrasWidget() {
+            if (typeof window.VLibras !== 'undefined') {
+                 // Inicializa o Widget, apontando para a aplicação principal
+                new window.VLibras.Widget('https://vlibras.gov.br/app');
+                
+                // Define que o widget está pronto para ser usado
+                isVwReady = true;
+
+                // Tenta definir o fundo para corresponder ao nosso tema escuro
+                if (window.vw && window.vw.vw_setBackground) {
+                    window.vw.vw_setBackground("#111827"); 
+                }
+                console.log("VLibras widget está pronto e inicializado.");
+
+            } else {
+                console.warn("Objeto VLibras não encontrado.");
             }
-            console.log("VLibras widget is ready.");
-        });
+        }
+        
+        // 1. O plugin dispara este evento quando o script base é carregado
+        window.addEventListener('vw_plugin_loaded', initializeVlibrasWidget);
+
+        // 2. Fallback: Se o evento não for disparado, tenta inicializar após um pequeno delay
+        setTimeout(() => {
+            if (!isVwReady) {
+                console.warn("Evento 'vw_plugin_loaded' não disparado. Tentando inicialização por fallback.");
+                initializeVlibrasWidget();
+            }
+        }, 3000); // 3 segundos de espera máxima
 
         // Função global para enviar texto ao avatar
         function signLanguage(text) {
-            if (isVwReady && window.vw && window.vw.vw_setSource) {
+            // Verifica se o widget está pronto E se a função de envio existe
+            if (isVwReady && window.vw && typeof window.vw.vw_setSource === 'function') {
                 // Envia o texto para o avatar traduzir
                 window.vw.vw_setSource(text);
-                console.log("Sending text to VLibras:", text);
+                console.log("Enviando texto para VLibras:", text);
             } else {
-                console.warn("VLibras não está pronto para receber texto.");
+                console.warn("VLibras não está pronto para receber texto. Texto:", text);
+                document.getElementById('status-indicator').textContent = "VLibras (Avatar) indisponível. Apenas legenda ativa.";
             }
         }
 
@@ -229,7 +247,7 @@
         recognition.onend = () => {
             btnStart.classList.remove('hidden');
             btnStop.classList.add('hidden');
-            statusIndicator.textContent = "";
+            statusIndicator.textContent = isVwReady ? "Pronto." : "VLibras (Avatar) indisponível.";
         };
 
         // Evento: A API de fala retorna um resultado
@@ -250,6 +268,7 @@
             line3.textContent = interimTranscript;
 
             if (finalTranscript) {
+                // Rola as legendas
                 line1.textContent = line2.textContent;
                 line2.textContent = finalTranscript; 
                 line3.textContent = ''; 
@@ -257,7 +276,7 @@
                 // ENVIA PARA O AVATAR DE LIBRAS
                 signLanguage(finalTranscript);
                 
-                statusIndicator.textContent = "Traduzindo...";
+                statusIndicator.textContent = isVwReady ? "Traduzindo..." : "Traduzido (apenas legenda).";
             }
         };
 
