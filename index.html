@@ -90,8 +90,9 @@
             <div vw-plugin-top-wrapper></div>
         </div>
     </div>
-    <!-- Carrega o plugin oficial diretamente -->
-    <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+    
+    <!-- NOVO: Carrega o SDK localmente em vez de usar o link oficial do plugin -->
+    <script src="vlibras-sdk.js"></script> 
     <!-- =================================================================================== -->
 
 
@@ -139,37 +140,10 @@
         
         let isVwReady = false;
         
-        // Função de inicialização do Widget, chamada após o plugin carregar
-        function initializeVlibrasWidget() {
-            if (typeof window.VLibras !== 'undefined') {
-                 // Inicializa o Widget, apontando para a aplicação principal
-                new window.VLibras.Widget('https://vlibras.gov.br/app');
-                
-                // Define que o widget está pronto para ser usado
-                isVwReady = true;
-
-                // Tenta definir o fundo para corresponder ao nosso tema escuro
-                if (window.vw && window.vw.vw_setBackground) {
-                    window.vw.vw_setBackground("#111827"); 
-                }
-                console.log("VLibras widget está pronto e inicializado.");
-
-            } else {
-                console.warn("Objeto VLibras não encontrado.");
-            }
-        }
+        // 
+        // 1. A inicialização agora é feita pelo 'vlibras-sdk.js'
+        //
         
-        // 1. O plugin dispara este evento quando o script base é carregado
-        window.addEventListener('vw_plugin_loaded', initializeVlibrasWidget);
-
-        // 2. Fallback: Se o evento não for disparado, tenta inicializar após um pequeno delay
-        setTimeout(() => {
-            if (!isVwReady) {
-                console.warn("Evento 'vw_plugin_loaded' não disparado. Tentando inicialização por fallback.");
-                initializeVlibrasWidget();
-            }
-        }, 3000); // 3 segundos de espera máxima
-
         // Função global para enviar texto ao avatar
         function signLanguage(text) {
             // Verifica se o widget está pronto E se a função de envio existe
@@ -182,6 +156,18 @@
                 document.getElementById('status-indicator').textContent = "VLibras (Avatar) indisponível. Apenas legenda ativa.";
             }
         }
+        
+        // 2. Escuta o evento que o SDK dispara quando termina a inicialização
+        window.addEventListener('vw_plugin_loaded', () => {
+             isVwReady = true;
+             console.log("VLibras widget está pronto e inicializado (via SDK local).");
+             // Tenta definir o fundo para corresponder ao nosso tema escuro
+             if (window.vw && window.vw.vw_setBackground) {
+                 window.vw.vw_setBackground("#111827"); 
+             }
+             document.getElementById('status-indicator').textContent = "Pronto. Tente falar.";
+        });
+
 
         // ===================================
         // LÓGICA DE RECONHECIMENTO DE VOZ (API)
