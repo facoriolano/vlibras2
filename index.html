@@ -50,19 +50,22 @@
             width: 100% !important;
             height: 100% !important;
             z-index: 0; /* Coloca ele atrás da nossa UI */
+            /* Garante que o fundo do container também é escuro */
+            background-color: #111827 !important; 
         }
         
         /* 2. Esconde o botão de acesso azul padrão do VLibras */
         div[vw-access-button] {
             display: none !important;
         }
-        
-        /* 3. Garante que o canvas do avatar preencha o container */
-        canvas[vw-plugin-canvas] {
+
+        /* 3. REFORÇO: Garante que o iframe (onde o avatar vive) também é full screen */
+        div[vw-plugin-wrapper] iframe {
             width: 100% !important;
             height: 100% !important;
+            border: none !important; /* Remove qualquer borda */
         }
-
+        
         /* 4. A nossa interface (botões, legendas) ficará por cima */
         .ui-overlay {
             position: relative;
